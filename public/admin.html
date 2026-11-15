@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Command Center - VibeBuddy</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-[#070b14] text-slate-100 min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- ADMIN PASSCODE LOCK SCREEN GATEKEEPER (Password Tertentu Admin) -->
+  <div id="adminLockScreen" class="fixed inset-0 z-50 bg-[#070b14]/95 backdrop-blur-xl flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-3xl border border-amber-500/30 p-8 shadow-2xl relative overflow-hidden">
+      <div class="absolute -right-8 -top-8 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+      
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 text-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2 class="text-2xl font-bold font-heading text-white">Ruang Kendali Admin</h2>
+        <p class="text-xs text-slate-400 mt-1">Area terproteksi. Hanya dapat diakses oleh Administrator dengan Kunci Rahasia Khusus.</p>
+      </div>
+
+      <div id="lockScreenAuthAlert" class="hidden mb-4 p-3 rounded-xl text-xs bg-rose-500/10 border border-rose-500/30 text-rose-300">
+        <!-- Error or prompt -->
+      </div>
+
+      <form id="passcodeForm" onsubmit="handleVerifyPasscode(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-amber-300 mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-key text-[10px]"></i> Masukkan Password Rahasia Khusus Admin:
+          </label>
+          <div class="relative">
+            <input type="password" id="adminSecretInput" required placeholder="Ketik Password Khusus..." class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition font-mono pr-10">
+            <button type="button" onclick="togglePassVisibility()" class="absolute right-3 top-3 text-slate-400 hover:text-white text-xs">
+              <i id="passVisibilityIcon" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">Password bawaan sistem: <span class="text-amber-400/80 font-mono font-bold">SUPERADMIN2026</span></p>
+        </div>
+
+        <button type="submit" id="unlockBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 font-bold text-sm text-slate-950 shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-lock-open"></i> Buka Kunci Dashboard
+        </button>
+
+        <div class="pt-2 flex justify-between items-center text-xs text-slate-400 border-t border-slate-800">
+          <a href="/" class="hover:text-white transition flex items-center gap-1">
+            <i class="fa-solid fa-arrow-left"></i> Kembali ke Web Utama
+          </a>
+          <button type="button" onclick="forceAdminLoginModal()" class="text-indigo-400 hover:underline">
+            Ganti Akun Admin
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN NAVBAR -->
+  <header class="glass-panel border-b border-amber-500/20 sticky top-0 z-40 bg-[#0b0f19]/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Admin Badge -->
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-2 group" title="Kembali ke Beranda">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-500 flex items-center justify-center text-slate-950 font-bold shadow-md">
+            🛡️
+          </div>
+          <div>
+            <span class="text-lg font-bold font-heading text-white group-hover:text-amber-300 transition">VibeBuddy Admin</span>
+            <span class="text-[10px] block text-amber-400 font-semibold tracking-wider uppercase">Pusat Kendali Server</span>
+          </div>
+        </a>
+        <span class="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+          LIVE SERVER SQL
+        </span>
+      </div>
+
+      <!-- Quick Nav Buttons -->
+      <div class="flex items-center gap-2">
+        <a href="/" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-house"></i> <span class="hidden sm:inline">Web Pengguna</span>
+        </a>
+        <button onclick="lockAdminDashboard()" title="Kunci Dashboard Kembali" class="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-xs font-semibold text-amber-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-lock"></i> <span class="hidden sm:inline">Kunci Akses</span>
+        </button>
+        <button onclick="adminLogout()" class="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-xs font-semibold text-rose-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="hidden sm:inline">Keluar</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- DASHBOARD CONTENT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- TOP SECTION: HEADER & ACTIONS -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+      <div>
+        <h1 class="text-3xl font-extrabold font-heading text-white flex items-center gap-3">
+          Dashboard Pengguna & Statistik Server
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">
+          Pantau seluruh aktivitas pengguna, kelola akun, atur broadcast notifikasi, dan amati tren interaksi AI virtual.
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="refreshDashboardData()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-white transition flex items-center gap-2 shadow">
+          <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i> Perbarui Data
+        </button>
+        <button onclick="openBroadcastModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:brightness-110 text-xs font-bold text-white transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+          <i class="fa-solid fa-bullhorn"></i> Broadcast Pengumuman
+        </button>
+      </div>
+    </div>
+
+    <!-- 1. KPI STATS CARDS -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <!-- Total Users -->
+      <div class="glass-panel p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Pengguna</span>
+          <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-users"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="statTotalUsers" class="text-3xl font-extrabold text-white font-heading">0</span>
+          <span id="statActiveRatio" class="text-xs text-emerald-400 font-medium">0 Aktif</span>
+        </div>
+        <div class="mt-3 flex gap-2 text-[10px] text-slate-400">
+          <span id="statBannedUsers" class="text-rose-400">0 Banned</span> &bull;
+          <span id="statMutedUsers" class="text-amber-400">0 Muted</span>
+        </div>
+      </div>
+
+      <!-- Total Chats -->
+      <div class="glass-panel p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Pesan Obrolan</span>
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-comments"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="statTotalMessages" class="text-3xl font-extrabold text-white font-heading">0</span>
+          <span class="text-xs text-slate-400">Pesan SQL</span>
+        </div>
+        <p class="mt-3 text-[10px] text-slate-400">Interaksi obrolan 6 karakter AI</p>
+      </div>
+
+      <!-- Total Moods & Hangout -->
+      <div class="glass-panel p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Curhat & Mood Logs</span>
+          <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-heart-pulse"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="statTotalMoods" class="text-3xl font-extrabold text-white font-heading">0</span>
+          <span class="text-xs text-pink-400 font-medium">Jurnal Emosi</span>
+        </div>
+        <p class="mt-3 text-[10px] text-slate-400" id="statTotalPosts">0 Postingan di Lounge</p>
+      </div>
+
+      <!-- Avg Friendship & Uptime -->
+      <div class="glass-panel p-5 rounded-3xl border border-slate-800 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Rata-Rata Persahabatan</span>
+          <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-award"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="statAvgLevel" class="text-3xl font-extrabold text-white font-heading">Lv. 1.0</span>
+          <span id="statAvgXp" class="text-xs text-amber-400 font-mono">0 XP</span>
+        </div>
+        <p class="mt-3 text-[10px] text-slate-400" id="statServerUptime">Server Uptime: Aktif</p>
+      </div>
+    </section>
+
+    <!-- 2. CHARTS SECTION (STATISTIK VISUAL PENGGUNA) -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Chart 1: Distribusi Suasana Hati Pengguna (Mood) -->
+      <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-bold font-heading text-white">Distribusi Suasana Hati Pengguna</h3>
+            <p class="text-xs text-slate-400">Proporsi emosi yang dicatat para user di server</p>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded-lg bg-pink-500/10 text-pink-400 border border-pink-500/20 font-semibold">
+            Mood Analytics
+          </span>
+        </div>
+        <div class="h-64 flex items-center justify-center">
+          <canvas id="moodChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Popularitas Sahabat Virtual -->
+      <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-bold font-heading text-white">Sahabat Virtual Terfavorit</h3>
+            <p class="text-xs text-slate-400">Karakter yang paling banyak menerima interaksi chat</p>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold">
+            Companion Traffic
+          </span>
+        </div>
+        <div class="h-64 flex items-center justify-center">
+          <canvas id="companionChart"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 3. TOP ACTIVE USERS LEADERBOARD & SERVER QUICK CONTROLS -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Top Active Users (2 cols) -->
+      <div class="lg:col-span-2 glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-bold font-heading text-white flex items-center gap-2">
+              <i class="fa-solid fa-trophy text-amber-400"></i> Leaderboard Pengguna Paling Aktif
+            </h3>
+            <p class="text-xs text-slate-400">Top 5 user dengan jumlah obrolan dan level persahabatan tertinggi</p>
+          </div>
+        </div>
+
+        <div id="topChattersContainer" class="space-y-3">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+
+      <!-- Quick Server Controls & Maintenance (1 col) -->
+      <div class="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+        <h3 class="text-lg font-bold font-heading text-white flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-indigo-400"></i> Kontrol Sistem Server
+        </h3>
+
+        <!-- Maintenance Mode Toggle -->
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div>
+            <p class="text-xs font-bold text-white">Maintenance Mode</p>
+            <p class="text-[10px] text-slate-400">Kunci web hanya untuk admin</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggleMaintenance" onchange="updateServerSettings()" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <!-- Allow Registration Toggle -->
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div>
+            <p class="text-xs font-bold text-white">Pendaftaran User Baru</p>
+            <p class="text-[10px] text-slate-400">Izinkan pendaftaran akun baru</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggleRegistration" checked onchange="updateServerSettings()" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+          </label>
+        </div>
+
+        <!-- Change Special Admin Passcode Button -->
+        <button onclick="openChangePasscodeModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-amber-300 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-key"></i> Ubah Password Khusus Admin
+        </button>
+
+        <!-- Clean Old Chats -->
+        <button onclick="cleanServerChats()" class="w-full py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-xs font-bold text-rose-300 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-broom"></i> Bersihkan Obrolan Server Lama
+        </button>
+      </div>
+
+    </section>
+
+    <!-- 4. MANAJEMEN PENGGUNA DALAM SERVER (USER MANAGEMENT TABLE) -->
+    <section class="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold font-heading text-white flex items-center gap-2">
+            <i class="fa-solid fa-user-gear text-indigo-400"></i> Manajemen Pengguna Server
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Daftar seluruh pengguna database SQL. Kelola status, role, atau reset password akun.</p>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Search input -->
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+            <input type="text" id="userSearchInput" oninput="debounceUserSearch()" placeholder="Cari username atau nama..." class="bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition w-48 sm:w-60">
+          </div>
+
+          <!-- Status Filter -->
+          <select id="userStatusFilter" onchange="loadUsersTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
+            <option value="all">Semua Status</option>
+            <option value="active">Aktif</option>
+            <option value="muted">Muted</option>
+            <option value="banned">Banned</option>
+          </select>
+
+          <!-- Role Filter -->
+          <select id="userRoleFilter" onchange="loadUsersTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
+            <option value="all">Semua Peran</option>
+            <option value="admin">Admin</option>
+            <option value="user">User Biasa</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="overflow-x-auto rounded-2xl border border-slate-800">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900/90 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+            <tr>
+              <th class="p-3.5">ID</th>
+              <th class="p-3.5">Pengguna</th>
+              <th class="p-3.5">Role</th>
+              <th class="p-3.5">Level & XP</th>
+              <th class="p-3.5">Interaksi (Chat/Mood)</th>
+              <th class="p-3.5">Status</th>
+              <th class="p-3.5">Bergabung</th>
+              <th class="p-3.5 text-right">Aksi Admin</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody" class="divide-y divide-slate-800/80 bg-slate-950/40">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+      <div id="usersTablePagination" class="flex justify-between items-center text-xs text-slate-400 pt-2">
+        <span id="userCountSummary">Menampilkan 0 pengguna</span>
+      </div>
+    </section>
+
+    <!-- 5. ACTIVITY LOGS & AUDIT TRAIL -->
+    <section class="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold font-heading text-white flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-emerald-400"></i> Audit Log Aktivitas Server
+          </h2>
+          <p class="text-xs text-slate-400">Rekam jejak tindakan autentikasi, chat, dan kontrol administratif secara real-time</p>
+        </div>
+        <button onclick="loadAuditLogs()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold">
+          <i class="fa-solid fa-rotate-right"></i> Refresh Log
+        </button>
+      </div>
+
+      <div class="max-h-72 overflow-y-auto space-y-2 pr-2" id="auditLogsContainer">
+        <!-- Dynamically populated -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: BROADCAST ANNOUNCEMENT -->
+  <div id="broadcastModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-3xl border border-slate-700 p-6 sm:p-8 shadow-2xl relative">
+      <button onclick="closeBroadcastModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg">
+        &times;
+      </button>
+      <h3 class="text-xl font-bold font-heading text-white mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-bullhorn text-indigo-400"></i> Broadcast Pengumuman Server
+      </h3>
+      <p class="text-xs text-slate-400 mb-4">Pengumuman ini akan langsung muncul di banner atas layar seluruh pengguna yang sedang aktif di website.</p>
+
+      <form onsubmit="handleSaveBroadcast(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Teks Pesan Pengumuman:</label>
+          <textarea id="broadcastInput" rows="3" required placeholder="Contoh: 🎉 Event Malam Minggu Seru! Obrolan bersama karakter Hana & Bella bonus +20 XP!" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="broadcastActiveCheckbox" class="w-4 h-4 rounded text-indigo-600 focus:ring-0 bg-slate-900 border-slate-700">
+          <label for="broadcastActiveCheckbox" class="text-xs font-semibold text-slate-300">Aktifkan Banner Pengumuman di Web Pengguna</label>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeBroadcastModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:text-white">Batal</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition shadow-lg shadow-indigo-600/30">
+            Simpan & Broadcast
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: GANTI PASSWORD KHUSUS ADMIN (CHANGE SPECIAL ADMIN PASSCODE) -->
+  <div id="changePasscodeModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-3xl border border-amber-500/30 p-6 sm:p-8 shadow-2xl relative">
+      <button onclick="closeChangePasscodeModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg">
+        &times;
+      </button>
+      <h3 class="text-xl font-bold font-heading text-white mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-key text-amber-400"></i> Ganti Password Khusus Admin
+      </h3>
+      <p class="text-xs text-slate-400 mb-4">Ubah kunci rahasia yang digunakan untuk membuka Dashboard Admin ini.</p>
+
+      <form onsubmit="handleChangePasscode(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password Rahasia Baru:</label>
+          <input type="password" id="newAdminPasscodeInput" required placeholder="Minimal 6 karakter..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeChangePasscodeModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:text-white">Batal</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 transition shadow-lg shadow-amber-500/20">
+            Perbarui Password Khusus
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RESET PASSWORD USER -->
+  <div id="resetUserPassModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-3xl border border-slate-700 p-6 shadow-2xl relative">
+      <button onclick="closeResetUserPassModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg">&times;</button>
+      <h3 class="text-lg font-bold font-heading text-white mb-2">Reset Password Pengguna</h3>
+      <p id="resetModalSub" class="text-xs text-slate-400 mb-4">Menyetel password baru untuk user.</p>
+
+      <form onsubmit="handleExecuteResetPassword(event)" class="space-y-4">
+        <input type="hidden" id="resetTargetUserId">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password Baru Sementara:</label>
+          <input type="text" id="resetNewPassInput" value="user123456" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white focus:outline-none font-mono">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeResetUserPassModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white">Reset Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>
